@@ -7,22 +7,30 @@
 // same license that Linux has.
 // https://www.gnu.org/licenses/gpl-3.0.html
 
-// RFC 2104, 5869, 6234
+// RFC 2104:
+// HMAC: Keyed-Hashing for Message Authentication
+
+// RFC 5869:
+// HMAC-based Extract-and-Expand Key Derivation
+// Function (HKDF)
+
+// RFC 6234:
+// US Secure Hash Algorithms (SHA and
+// SHA-based HMAC and HKDF)
+
 
 // FIPS 180-3
 
 // FIPS 198-1
 
+
+
 // Some Intel processors have SHA instructions.
 // https://www.intel.com/content/www/us/en/
 //           developer/articles/technical/
 //           intel-sha-extensions.html
-  // They are SIMD extensions.
+// They are SIMD extensions.
 
-
-
-// See https://ericssourcecode.github.io/
-// For guides and information.
 
 
 
@@ -37,8 +45,8 @@ using System;
 public class Sha256
 {
 private MainData mData;
-//  Uint32Array intermediateHash;
-//  Uint32Array W;
+private Uint32Array intermediateHash;
+private Uint32Array W;
 
 
 private Sha256()
@@ -50,18 +58,19 @@ private Sha256()
 internal Sha256( MainData useMainData )
 {
 mData = useMainData;
+intermediateHash = new Uint32Array();
+W = new Uint32Array();
 }
 
 
 
-/*
+private static uint rotateR( uint x,
+                             int howMuch )
+{
+return (x >> howMuch) |
+       (x << (32 - howMuch));
+}
 
-  static inline Uint32 rotateR( const Uint32 x,
-                         const Int32 howMuch )
-    {
-    return (x >> howMuch) |
-           (x << (32 - howMuch));
-    }
 
 
 // Not used.
@@ -73,15 +82,16 @@ mData = useMainData;
 //     }
 
 
+private static uint shaCh( uint x,
+                           uint y,
+                           uint z )
+{
+// Bitwise not ~.
+return (x & y) ^ ((~x) & z);
+}
 
-  static inline Uint32 shaCh( const Uint32 x,
-                              const Uint32 y,
-                              const Uint32 z)
-    {
-    // Bitwise not ~.
-    return (x & y) ^ ((~x) & z);
-    }
 
+/*
   static inline Uint32 shaMaj( const Uint32 x,
                                const Uint32 y,
                                const Uint32 z )
