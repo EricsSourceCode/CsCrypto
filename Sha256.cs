@@ -26,9 +26,6 @@
 
 
 // Some Intel processors have SHA instructions.
-// https://www.intel.com/content/www/us/en/
-//           developer/articles/technical/
-//           intel-sha-extensions.html
 // They are SIMD extensions.
 
 
@@ -47,6 +44,13 @@ public class Sha256
 private MainData mData;
 private Uint32Array intermediateHash;
 private Uint32Array W;
+
+// 64 * 8 = 512 bits block size.
+// 256 bit hash length.
+// =============
+// private static int BlockSize = 64; // Bytes.
+// 256 bits is 32 bytes.
+// private static int HashSize = 32;
 
 
 private Sha256()
@@ -91,50 +95,56 @@ return (x & y) ^ ((~x) & z);
 }
 
 
-/*
-  static inline Uint32 shaMaj( const Uint32 x,
-                               const Uint32 y,
-                               const Uint32 z )
-    {
-    return (x & y) ^ (x & z) ^ (y & z);
-    }
+private static uint shaMaj( uint x,
+                            uint y,
+                            uint z )
+{
+return (x & y) ^ (x & z) ^ (y & z);
+}
 
-  // Notice how they did upper and lower case
-  // names for the sigma #define statements.
-  // That comes from the greek sigma symbol,
-  // and there is a capital greek sigma and a
-  // lower case sigma.
-  // Upper case is B, lower case is S.
-  // B for Big, S for Small.
 
-  static inline Uint32 shaBSigma0( const Uint32 x )
-    {
-    return rotateR( x, 2 ) ^ rotateR( x, 13 ) ^
+// Notice how they did upper and lower case
+// names for the sigma #define statements.
+// That comes from the greek sigma symbol,
+// and there is a capital greek sigma and a
+// lower case sigma.
+// Upper case is B, lower case is S.
+// B for Big, S for Small.
+
+private static uint shaBSigma0( uint x )
+{
+return rotateR( x, 2 ) ^ rotateR( x, 13 ) ^
                              rotateR( x, 22 );
-    }
+}
 
-  static inline Uint32 shaBSigma1( const Uint32 x )
-    {
-    return rotateR( x, 6 ) ^ rotateR( x, 11 ) ^
+
+private static uint shaBSigma1( uint x )
+{
+return rotateR( x, 6 ) ^ rotateR( x, 11 ) ^
                              rotateR( x, 25 );
-    }
+}
 
-  static inline Uint32 shaSSigma0( const Uint32 x )
-    {
-    return rotateR( x, 7 ) ^ rotateR( x, 18 ) ^
+
+
+private static uint shaSSigma0( uint x )
+{
+return rotateR( x, 7 ) ^ rotateR( x, 18 ) ^
                              (x >> 3);
-    }
+}
 
-  static inline Uint32 shaSSigma1( const Uint32 x )
-    {
-    return rotateR( x, 17 ) ^ rotateR( x, 19 ) ^
+
+
+private static uint shaSSigma1( uint x )
+{
+return rotateR( x, 17 ) ^ rotateR( x, 19 ) ^
                              (x >> 10);
-    }
+}
 
 
-  // For SHA 256.
+// For SHA 256.
 
-  static constexpr Uint32 K[64] = {
+// This is a constexpr in C++.
+private static readonly uint[] K = {
       0x428a2f98, 0x71374491,
       0xb5c0fbcf, 0xe9b5dba5,
       0x3956c25b, 0x59f111f1,
@@ -169,15 +179,6 @@ return (x & y) ^ ((~x) & z);
       0xbef9a3f7, 0xc67178f2 };
 
 
-    // 64 * 8 = 512 bits block size.
-    // 256 bit hash length.
-
-  public:
-  static const Int32 BlockSize = 64; // Bytes.
-  // 256 bits is 32 bytes.
-  static const Int32 HashSize = 32;
-
-
 // Test Vectors:
 // For "abc"
 // SHA-256
@@ -208,24 +209,15 @@ return (x & y) ^ ((~x) & z);
 // ba7816bf...
 
 
-
-void Sha256::appendPadding( CharBuf& charBuf )
+void appendPadding( ByteBuf byteBuf )
 {
-const Uint64 originalLength =
-           Casting::i32ToU64( charBuf.getLast());
-
-// StIO::printF( "originalLength: " );
-// StIO::printFD( Casting::u64ToI32(
-//               originalLength ));
-// StIO::putS( "" );
-
-
-// To restore it to the original length:
-// CharBuf.truncateLast( Int32 setTo )
+ulong originalLength = (ulong)byteBuf.getLast();
 
 // Append that 1 bit.
-charBuf.appendU8( 128 );
+byteBuf.appendU8( 128 );
 
+=====
+/*
 Int32 howBig = charBuf.getLast() % 64;
 
 // StIO::printF( "howBig: " );
@@ -274,10 +266,12 @@ Int32 finalSize = charBuf.getLast();
 if( (finalSize % 64) != 0 )
   throw "SHA padding finalSize is not right.";
 
+*/
 }
 
 
 
+/*
 void Sha256::init( void )
 {
 W.setSize( 64 );
