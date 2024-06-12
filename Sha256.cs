@@ -1,6 +1,7 @@
 // Copyright Eric Chauvin 2024.
 
 
+==== Where am I with this?
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -44,6 +45,7 @@ public class Sha256
 private MainData mData;
 private Uint32Array intermediateHash;
 private Uint32Array W;
+private ByteBuf toHashBuf;
 
 // 64 * 8 = 512 bits block size.
 // 256 bit hash length.
@@ -64,6 +66,7 @@ internal Sha256( MainData useMainData )
 mData = useMainData;
 intermediateHash = new Uint32Array();
 W = new Uint32Array();
+toHashBuf = new ByteBuf();
 }
 
 
@@ -216,29 +219,15 @@ ulong originalLength = (ulong)byteBuf.getLast();
 // Append that 1 bit.
 byteBuf.appendU8( 128 );
 
-=====
-/*
-Int32 howBig = charBuf.getLast() % 64;
+int howBig = byteBuf.getLast() % 64;
 
-// StIO::printF( "howBig: " );
-// StIO::printFD( howBig );
-// StIO::putS( "" );
-
-
-Int32 toAdd = 64 - howBig;
+int toAdd = 64 - howBig;
 
 // You have to add the least number of zeros
 // possible in order to make it zero mod
 // 64 bytes.
 // It already has seven zero bits after that
 // 1 bit.
-
-// if( toAdd == 64 )
-  // toAdd = 0;
-
-// StIO::printF( "toAdd at top: " );
-// StIO::printFD( toAdd );
-// StIO::putS( "" );
 
 // For SHA 512 it's a 128 bit length value.
 // So 16 bytes.
@@ -248,31 +237,22 @@ toAdd -= 8;
 if( toAdd < 0 )
   toAdd += 64;
 
-// StIO::printF( "toAdd: " );
-// StIO::printFD( toAdd );
-// StIO::putS( "" );
-
-// The spec says this has to be the smallest
-// number of zeros to make it come to 64 bytes.
-// 512 bits.
-
 for( Int32 count = 0; count < toAdd; count++ )
-  charBuf.appendU8( 0 );
+  byteBuf.appendU8( 0 );
 
-Uint64 lengthInBits = originalLength * 8;
-charBuf.appendU64( lengthInBits );
+ulong lengthInBits = originalLength * 8;
+byteBuf.appendU64( lengthInBits );
 
-Int32 finalSize = charBuf.getLast();
+int finalSize = byteBuf.getLast();
 if( (finalSize % 64) != 0 )
-  throw "SHA padding finalSize is not right.";
+  throw new Exception( 
+       "SHA padding finalSize is not right." );
 
-*/
 }
 
 
 
-/*
-void Sha256::init( void )
+internal void init()
 {
 W.setSize( 64 );
 intermediateHash.setSize( 8 );
@@ -296,116 +276,100 @@ intermediateHash.setVal( 7, 0x5BE0CD19 );
 }
 
 
-
-void Sha256::processAllBlocks(
-                        const CharBuf& charBuf )
+internal void processAllBlocks( ByteBuf byteBuf )
 {
-CharBuf toHashBuf;
-toHashBuf.copy( charBuf );
-
+toHashBuf.copy( byteBuf );
 appendPadding( toHashBuf );
 init();
 
-Int32 max = toHashBuf.getLast();
+int max = toHashBuf.getLast();
 if( (max % 64) != 0 )
-  throw "processAllBlocks (max % 64) != 0";
+  throw new Exception( 
+        "processAllBlocks (max % 64) != 0" );
 
-for( Int32 where = 0; where < max; where += 64 )
+for( int where = 0; where < max; where += 64 )
   {
-  // StIO::putS( "Processing message block." );
   processMessageBlock( toHashBuf, where );
   }
-
-// StIO::putS( "Hash at end:" );
-// showHash();
-
-// StIO::putS( "Finished the block chain." );
 }
 
 
 
-void Sha256::showHash( void )
+
+internal void showHash()
 {
-CharBuf hashBuf;
+ByteBuf hashBuf = new ByteBuf();
 getHash( hashBuf );
-
-const Int32 maxBytes = hashBuf.getLast();
-for( Int32 count = 0; count < maxBytes; count++ )
-  {
-  Uint8 oneByte = hashBuf.getU8( count );
-  char leftC = ByteHex::getLeftChar( oneByte );
-  StIO::putChar( leftC );
-  char rightC = ByteHex::getRightChar( oneByte );
-  StIO::putChar( rightC );
-  StIO::putChar( ' ' );
-  }
-
-StIO::putChar( '\n' );
+string toShow = hashBuf.getHexStr();
+mData.showStatus( toShow );
 }
 
 
 
 // Get the Message Digest as a series of bytes.
-void Sha256::getHash( CharBuf& charBuf )
+internal void getHash( ByteBuf byteBuf )
 {
-charBuf.clear();
+byteBuf.clear();
 
 // The hash length is 8 times 32 bits.
 
-for( Int32 count = 0; count < 8; count++ )
+for( int count = 0; count < 8; count++ )
   {
   // Big endian.
-  Uint32 toSet = intermediateHash.getVal( count );
-  charBuf.appendU32( toSet );
+  uint toSet = intermediateHash.getVal( count );
+  byteBuf.appendU32( toSet );
   }
 }
 
 
 
-void Sha256::processMessageBlock(
-                  const CharBuf& charBuf,
-                  const Int32 where )
-{
-const Int32 last = charBuf.getLast();
-if( (where + 63) >= last )
-  throw "Sha256.processMessageBlock( last.";
 
-for( Int32 count = 0; count < 16; count++ )
+private void processMessageBlock(
+                             ByteBuf byteBuf,
+                             int where )
+{
+int last = byteBuf.getLast();
+if( (where + 63) >= last )
+  throw new Exception( 
+        "Sha256.processMessageBlock( last." );
+
+for( int count = 0; count < 16; count++ )
   {
-  W.setVal( count, charBuf.getU32(
+  W.setVal( count, byteBuf.getU32(
                        where + (count * 4) ));
   }
 
-for( Int32 count = 16; count < 64; count++ )
+for( int count = 16; count < 64; count++ )
   {
-  Uint32 toSet1 = shaSSigma1( W.getVal( count - 2 ));
-  Uint32 toSet2 = W.getVal( count - 7 );
-  Uint32 toSet3 = shaSSigma0( W.getVal(
-                                     count - 15 ));
-  Uint32 toSet4 = W.getVal( count - 16 );
+  uint toSet1 = shaSSigma1(
+                        W.getVal( count - 2 ));
+  uint toSet2 = W.getVal( count - 7 );
+  uint toSet3 = shaSSigma0( W.getVal(
+                                 count - 15 ));
+  uint toSet4 = W.getVal( count - 16 );
 
-  Uint32 toSet = toSet1 + toSet2 + toSet3 +
+  uint toSet = toSet1 + toSet2 + toSet3 +
                                    toSet4;
 
   W.setVal( count, toSet );
   }
 
-Uint32 A = intermediateHash.getVal( 0 );
-Uint32 B = intermediateHash.getVal( 1 );
-Uint32 C = intermediateHash.getVal( 2 );
-Uint32 D = intermediateHash.getVal( 3 );
-Uint32 E = intermediateHash.getVal( 4 );
-Uint32 F = intermediateHash.getVal( 5 );
-Uint32 G = intermediateHash.getVal( 6 );
-Uint32 H = intermediateHash.getVal( 7 );
+uint A = intermediateHash.getVal( 0 );
+uint B = intermediateHash.getVal( 1 );
+uint C = intermediateHash.getVal( 2 );
+uint D = intermediateHash.getVal( 3 );
+uint E = intermediateHash.getVal( 4 );
+uint F = intermediateHash.getVal( 5 );
+uint G = intermediateHash.getVal( 6 );
+uint H = intermediateHash.getVal( 7 );
 
-for( Int32 t = 0; t < 64; t++ )
+for( int t = 0; t < 64; t++ )
   {
-  Uint32 temp1 = H + shaBSigma1( E ) +
+  uint temp1 = H + shaBSigma1( E ) +
          shaCh( E, F, G ) + K[t] +
          W.getVal( t );
 
-  Uint32 temp2 = shaBSigma0( A ) +
+  uint temp2 = shaBSigma0( A ) +
                             shaMaj( A, B, C );
 
   H = G;
@@ -448,7 +412,7 @@ intermediateHash.setVal( 7,
 
 
 
-
+/*
 void Sha256::hMac( CharBuf& result,
                    const CharBuf& key,
                    const CharBuf& message )
