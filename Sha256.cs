@@ -1,7 +1,6 @@
 // Copyright Eric Chauvin 2024.
 
 
-==== Where am I with this?
 
 // This is licensed under the GNU General
 // Public License (GPL).  It is the
@@ -49,10 +48,9 @@ private ByteBuf toHashBuf;
 
 // 64 * 8 = 512 bits block size.
 // 256 bit hash length.
-// =============
-// private static int BlockSize = 64; // Bytes.
+private const int BlockSize = 64; // Bytes.
 // 256 bits is 32 bytes.
-// private static int HashSize = 32;
+private const int HashSize = 32;
 
 
 private Sha256()
@@ -245,7 +243,7 @@ byteBuf.appendU64( lengthInBits );
 
 int finalSize = byteBuf.getLast();
 if( (finalSize % 64) != 0 )
-  throw new Exception( 
+  throw new Exception(
        "SHA padding finalSize is not right." );
 
 }
@@ -284,7 +282,7 @@ init();
 
 int max = toHashBuf.getLast();
 if( (max % 64) != 0 )
-  throw new Exception( 
+  throw new Exception(
         "processAllBlocks (max % 64) != 0" );
 
 for( int where = 0; where < max; where += 64 )
@@ -330,7 +328,7 @@ private void processMessageBlock(
 {
 int last = byteBuf.getLast();
 if( (where + 63) >= last )
-  throw new Exception( 
+  throw new Exception(
         "Sha256.processMessageBlock( last." );
 
 for( int count = 0; count < 16; count++ )
@@ -412,10 +410,9 @@ intermediateHash.setVal( 7,
 
 
 
-/*
-void Sha256::hMac( CharBuf& result,
-                   const CharBuf& key,
-                   const CharBuf& message )
+internal void hMac( ByteBuf result,
+                    ByteBuf key,
+                    ByteBuf message )
 {
 // 64 * 8 = 512 bits block size.
 // 256 bit hash length.
@@ -425,9 +422,10 @@ void Sha256::hMac( CharBuf& result,
 // blocks ... and by L the byte-length of
 // hash outputs."
 
-const Int32 B = 64;
-const Int32 L = 32;
+const int B = 64;
+const int L = 32;
 
+/*
 CharBuf innerKey;
 CharBuf outerKey;
 
@@ -501,10 +499,12 @@ getHash( result );
 //  jumps over the lazy dog") =
 // f7bc83f430538424b13298e6aa6fb143ef4d5
 // 9a14946175997479dbc2d1a3cd8
+*/
 }
 
 
 
+/*
 void Sha256::makeHash( CharBuf& result,
                        const CharBuf& message )
 {
