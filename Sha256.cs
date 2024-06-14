@@ -45,12 +45,17 @@ private MainData mData;
 private Uint32Array intermediateHash;
 private Uint32Array W;
 private ByteBuf toHashBuf;
+private ByteBuf innerKey;
+private ByteBuf outerKey;
+private ByteBuf innerHash;
+private ByteBuf outerHash;
 
 // 64 * 8 = 512 bits block size.
 // 256 bit hash length.
 private const int BlockSize = 64; // Bytes.
 // 256 bits is 32 bytes.
 private const int HashSize = 32;
+
 
 
 private Sha256()
@@ -65,6 +70,10 @@ mData = useMainData;
 intermediateHash = new Uint32Array();
 W = new Uint32Array();
 toHashBuf = new ByteBuf();
+innerKey = new ByteBuf();
+outerKey = new ByteBuf();
+innerHash = new ByteBuf();
+outerHash = new ByteBuf();
 }
 
 
@@ -180,34 +189,6 @@ private static readonly uint[] K = {
       0xbef9a3f7, 0xc67178f2 };
 
 
-// Test Vectors:
-// For "abc"
-// SHA-256
-// ba7816bf 8f01cfea 414140de 5dae2223 b00361a3
-   //             96177a9c b410ff61 f20015ad
-
-// For the empty string.
-// Length 0.
-// If you test with an empty string then you are
-// appending a 1 bit, and a length of zero.
-// That is the 64 bytes.
-
-// SHA-256
-// e3b0c442 98fc1c14 9afbf4c8 996fb924
-// 27ae41e4 649b934c a495991b 7852b855
-
-// Input message:
-// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnl
-//      mnomnopnopq"
-// (length 448 bits).
-
-// SHA-256
-// 248d6a61 d20638b8 e5c02693 0c3e6039
-// a33ce459 64ff2167 f6ecedd4 19db06c1
-
-// A linux test:
-// echo -n "abc" | sha256sum
-// ba7816bf...
 
 
 void appendPadding( ByteBuf byteBuf )
@@ -425,13 +406,9 @@ internal void hMac( ByteBuf result,
 const int B = 64;
 const int L = 32;
 
-/*
-CharBuf innerKey;
-CharBuf outerKey;
-
 innerKey.copy( key );
 
-Int32 lastKey = innerKey.getLast();
+int lastKey = innerKey.getLast();
 if( lastKey > B )
   {
   processAllBlocks( innerKey );
@@ -442,44 +419,46 @@ lastKey = innerKey.getLast();
 
 if( lastKey < B )
   {
-  const Int32 howMany = B - lastKey;
-  for( Int32 count = 0; count < howMany; count++ )
+  int howMany = B - lastKey;
+  for( int count = 0; count < howMany; count++ )
     innerKey.appendU8( 0 );
 
   if( innerKey.getLast() != B )
-    throw "Inner key padding was bad.";
+    throw new Exception( 
+               "Inner key padding was bad." );
 
   }
 
 outerKey.copy( innerKey );
 
 // ipad
-for( Int32 count = 0; count < B; count++ )
+for( int count = 0; count < B; count++ )
   {
-  Uint8 xByte = innerKey.getU8( count ) xor 0x36;
+  byte xByte = (byte)(innerKey.getU8(
+                             count ) ^ 0x36 );
   innerKey.setU8( count, xByte );
   }
 
-CharBuf innerHash;
 innerHash.copy( innerKey );
-innerHash.appendCharBuf( message );
+innerHash.appendByteBuf( message );
 
 processAllBlocks( innerHash );
 getHash( innerHash );
 
 if( innerHash.getLast() != L )
-  throw "The hash length is not right.";
+  throw new Exception( 
+            "The hash length is not right." );
 
 // opad
-for( Int32 count = 0; count < B; count++ )
+for( int count = 0; count < B; count++ )
   {
-  Uint8 xByte = outerKey.getU8( count ) xor 0x5C;
+  byte xByte = (byte)(outerKey.getU8(
+                           count ) ^ 0x5C );
   outerKey.setU8( count, xByte );
   }
 
-CharBuf outerHash;
 outerHash.copy( outerKey );
-outerHash.appendCharBuf( innerHash );
+outerHash.appendByteBuf( innerHash );
 
 processAllBlocks( outerHash );
 
@@ -499,14 +478,13 @@ getHash( result );
 //  jumps over the lazy dog") =
 // f7bc83f430538424b13298e6aa6fb143ef4d5
 // 9a14946175997479dbc2d1a3cd8
-*/
 }
 
 
 
-/*
-void Sha256::makeHash( CharBuf& result,
-                       const CharBuf& message )
+
+internal void makeHash( ByteBuf result,
+                        ByteBuf message )
 {
 processAllBlocks( message );
 getHash( result );
@@ -516,7 +494,72 @@ getHash( result );
 // StIO::putS( "\n\n" );
 }
 
+
+
+
+internal void test()
+{
+// Test Vectors:
+// For "abc"
+// SHA-256
+// ba7816bf 8f01cfea 414140de 5dae2223 b00361a3
+   //             96177a9c b410ff61 f20015ad
+
+// For the empty string.
+// Length 0.
+// If you test with an empty string then you are
+// appending a 1 bit, and a length of zero.
+// That is the 64 bytes.
+
+// SHA-256
+// e3b0c442 98fc1c14 9afbf4c8 996fb924
+// 27ae41e4 649b934c a495991b 7852b855
+
+// Input message:
+// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnl
+//      mnomnopnopq"
+// (length 448 bits).
+
+// SHA-256
+// 248d6a61 d20638b8 e5c02693 0c3e6039
+// a33ce459 64ff2167 f6ecedd4 19db06c1
+
+// A linux test:
+// echo -n "abc" | sha256sum
+// ba7816bf...
+
+ByteBuf message = new ByteBuf();
+ByteBuf key = new ByteBuf();
+ByteBuf result = new ByteBuf();
+
+/*
+// message.setFromAsciiStr( "abc" );
+// message.setFromAsciiStr( "" );
+
+string testM = "abcdbcdecdefdefgefghfghigh" +
+               "ijhijkijkljklmklmnl" +
+               "mnomnopnopq";
+
+message.setFromAsciiStr( testM );
+
+makeHash( result, message );
+string showS = result.getHexStr();
+mData.showStatus( showS );
 */
+
+key.setFromAsciiStr( "key" );
+message.setFromAsciiStr( 
+ "The quick brown fox jumps over the lazy dog" );
+
+hMac( result, key, message );
+
+string showS = result.getHexStr();
+mData.showStatus( showS );
+// result:
+// f7bc83f430538424b13298e6aa6fb143ef4d5
+// 9a14946175997479dbc2d1a3cd8
+
+}
 
 
 
