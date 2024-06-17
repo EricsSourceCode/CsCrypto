@@ -424,7 +424,7 @@ if( lastKey < B )
     innerKey.appendU8( 0 );
 
   if( innerKey.getLast() != B )
-    throw new Exception( 
+    throw new Exception(
                "Inner key padding was bad." );
 
   }
@@ -446,7 +446,7 @@ processAllBlocks( innerHash );
 getHash( innerHash );
 
 if( innerHash.getLast() != L )
-  throw new Exception( 
+  throw new Exception(
             "The hash length is not right." );
 
 // opad
@@ -548,7 +548,7 @@ mData.showStatus( showS );
 */
 
 key.setFromAsciiStr( "key" );
-message.setFromAsciiStr( 
+message.setFromAsciiStr(
  "The quick brown fox jumps over the lazy dog" );
 
 hMac( result, key, message );
