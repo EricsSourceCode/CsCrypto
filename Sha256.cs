@@ -532,7 +532,6 @@ ByteBuf message = new ByteBuf();
 ByteBuf key = new ByteBuf();
 ByteBuf result = new ByteBuf();
 
-/*
 // message.setFromAsciiStr( "abc" );
 // message.setFromAsciiStr( "" );
 
@@ -545,8 +544,9 @@ message.setFromAsciiStr( testM );
 makeHash( result, message );
 string showS = result.getHexStr();
 mData.showStatus( showS );
-*/
 
+
+/*
 key.setFromAsciiStr( "key" );
 message.setFromAsciiStr(
  "The quick brown fox jumps over the lazy dog" );
@@ -558,7 +558,7 @@ mData.showStatus( showS );
 // result:
 // f7bc83f430538424b13298e6aa6fb143ef4d5
 // 9a14946175997479dbc2d1a3cd8
-
+*/
 }
 
 
